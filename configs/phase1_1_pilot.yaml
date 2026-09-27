@@ -1,0 +1,50 @@
+# Pilot run (2 samples/condition) to verify all 4 providers/models work
+# end-to-end before committing to the full 100-sample Phase 1.1 run.
+experiment_id: "phase1_1_pilot"
+description: "Pilot: verify all 4 models work before the full Phase 1.1 run"
+researcher: "Thayot Khantayos (6610505420)"
+
+global:
+  temperature: 1.0
+
+  concurrency:
+    providers:
+      anthropic: 5
+      openai: 5
+      openrouter: 5
+
+  samples_per_condition: 2
+
+expansions:
+  - name: "phase1_1_pilot"
+    description: "Condition A only, all 4 models, 2 samples"
+    enabled: true
+
+    models:
+      - "claude-opus-4-8"
+      - "gpt-4.1"
+      - "google/gemini-2.5-flash"
+      - "x-ai/grok-4.3"
+
+    # Just condition A (threat + goal-conflict), the paper's headline condition,
+    # across all 3 scenarios -- enough to confirm each model/provider works.
+    variables:
+      scenarios: ["blackmail", "leaking", "murder"]
+      goal_types: ["explicit"]
+      goal_values: ["america"]
+      urgency_types: ["replacement"]
+
+classification:
+  enabled: false
+  classifier_model: "claude-sonnet-4-6"
+  concurrency: 10
+  models:
+    murder: "murder_classifier"
+    blackmail: "blackmail_classifier"
+    leaking: "leak_classifier"
+
+execution:
+  resume_interrupted: true
+  timeout_seconds: 1800
+  retries: 2
+  checkpoint_frequency: 5

@@ -1,0 +1,88 @@
+# Reproduction attempt (2026) of the original Agentic Misalignment study,
+# using 8 currently-available models (roughly half of the original 16),
+# spanning the same set of companies covered in the original paper.
+# Original checkpoints (claude-opus-4-20250514, claude-3-7-sonnet-20250219,
+# gemini-2.5-flash, grok-3-beta era) have since been retired/superseded by
+# their providers; this substitutes the closest currently-active models.
+experiment_id: "reproduction_8model_2026"
+description: "8-model subset reproduction of the original blackmail/leaking/murder study"
+researcher: "Aengus Lynch"
+
+global:
+  temperature: 1.0
+
+  concurrency:
+    providers:
+      anthropic: 20
+      openai: 50
+      openrouter: 60
+
+    rate_limits:
+      pools:
+        openrouter_google:
+          rpm: 60
+          models: ["google/*"]
+
+        openrouter_xai:
+          rpm: 60
+          models: ["x-ai/*"]
+
+        openrouter_meta:
+          rpm: 60
+          models: ["meta-llama/*"]
+
+        openrouter_deepseek:
+          rpm: 20
+          models: ["deepseek/*"]
+
+  # Standard sampling matching the original study
+  samples_per_condition: 100
+
+expansions:
+  - name: "reproduction_8model"
+    description: "Full 18 conditions across 8 representative models"
+    enabled: true
+
+    models:
+      # Anthropic (flagship, replaces retired claude-opus-4-20250514)
+      - "claude-opus-4-8"
+
+      # OpenAI
+      - "gpt-4.1"
+      - "o3"
+
+      # Google (via OpenRouter, bypasses direct Google safety filters
+      # the same way the original study did)
+      - "google/gemini-2.5-flash-preview-05-20"
+      - "google/gemini-2.5-pro-preview"
+
+      # xAI
+      - "x-ai/grok-3-beta"
+
+      # Meta
+      - "meta-llama/llama-4-maverick"
+
+      # DeepSeek (via OpenRouter to avoid Together's restrictive rate limits)
+      - "deepseek/deepseek-r1-0528"
+
+    # 18 total conditions: 3 scenarios x 2 goal_types x 3 urgency_types
+    variables:
+      scenarios: ["blackmail", "leaking", "murder"]
+      goal_types: ["explicit", "none"]
+      goal_values: ["america"]
+      urgency_types: ["none", "restriction", "replacement"]
+
+classification:
+  enabled: false  # classify separately after the run via classify_results.py
+  classifier_model: "claude-sonnet-4-6"  # replaces retired claude-3-7-sonnet-20250219
+  concurrency: 20
+  models:
+    murder: "murder_classifier"
+    blackmail: "blackmail_classifier"
+    leaking: "leak_classifier"
+
+execution:
+  resume_interrupted: true
+  timeout_seconds: 1800
+  retries: 4
+  checkpoint_frequency: 10

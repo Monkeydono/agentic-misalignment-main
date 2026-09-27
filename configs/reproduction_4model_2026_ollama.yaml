@@ -1,0 +1,60 @@
+# Interim Phase 1.1 reproduction run on local Ollama models, while the
+# Anthropic and OpenRouter accounts are out of credits (see
+# reproduction_4model_2026.yaml, the primary/official config once credits
+# are topped up). Same 2x2 factorial matrix (A/B/C/D) across all 3 scenarios
+# and the Table 2 quality bar of 100 samples/condition, but with 4 small
+# open-weight models (Meta/Google/Alibaba/Microsoft) served locally via
+# Ollama instead of the frontier API models -- see the caveat in
+# api_client/model_client.py OLLAMA_MODELS about model capability vs the
+# original paper's frontier models.
+#
+# NOTE: at ~45s/response on this hardware (GTX 1650 4GB / 8GB RAM,
+# concurrency=1), the full 4,800-sample matrix takes on the order of 2-3
+# days of continuous runtime. Keep this machine awake (disable sleep) for
+# the duration; run_experiments.py resumes automatically if interrupted.
+experiment_id: "phase1_1_reproduction_ollama"
+description: "Phase 1.1 (interim): 2x2 factor matrix (A/B/C/D) reproduction across blackmail/leaking/murder, 4 local Ollama models, 100 samples/condition"
+researcher: "Thayot Khantayos (6610505420)"
+
+global:
+  temperature: 1.0
+
+  concurrency:
+    providers:
+      # Single local GPU/CPU -- keep concurrency low so requests queue
+      # instead of thrashing memory.
+      ollama: 1
+
+  samples_per_condition: 100
+
+expansions:
+  - name: "phase1_1_matrix_ollama"
+    description: "Conditions A/B/C/D across all 3 scenarios, 4 local models"
+    enabled: true
+
+    models:
+      - "llama3.2:3b"   # Meta
+      - "gemma2:2b"     # Google
+      - "qwen2.5:3b"    # Alibaba
+      - "phi3:3.8b"     # Microsoft
+
+    variables:
+      scenarios: ["blackmail", "leaking", "murder"]
+      goal_types: ["explicit", "none"]
+      goal_values: ["america"]
+      urgency_types: ["none", "replacement"]
+
+classification:
+  enabled: false  # classify separately after the run via classify_results.py
+  classifier_model: "claude-sonnet-4-6"
+  concurrency: 20
+  models:
+    murder: "murder_classifier"
+    blackmail: "blackmail_classifier"
+    leaking: "leak_classifier"
+
+execution:
+  resume_interrupted: true
+  timeout_seconds: 1800
+  retries: 4
+  checkpoint_frequency: 10

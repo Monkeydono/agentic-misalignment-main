@@ -1,0 +1,54 @@
+# Pilot run (2 samples/condition) on local Ollama models, per the advisor's
+# suggestion to run on Ollama instead of paid APIs. Mirrors phase1_1_pilot.yaml
+# but swaps the 4 cloud models for 4 open-weight models from different
+# developers (Meta/Google/Alibaba/Microsoft), served locally via Ollama.
+# Model sizes (2-4B, quantized) were chosen to fit this machine's hardware
+# (GTX 1650 4GB VRAM, 8GB RAM) -- see api_client/model_client.py OLLAMA_MODELS.
+experiment_id: "phase1_1_pilot_ollama"
+description: "Pilot: verify all 4 local Ollama models work end-to-end before the full Phase 1.1 run"
+researcher: "Thayot Khantayos (6610505420)"
+
+global:
+  temperature: 1.0
+
+  concurrency:
+    providers:
+      # Single local GPU/CPU -- keep concurrency low so requests queue
+      # instead of thrashing memory.
+      ollama: 1
+
+  samples_per_condition: 2
+
+expansions:
+  - name: "phase1_1_pilot_ollama"
+    description: "Condition A only, all 4 local models, 2 samples"
+    enabled: true
+
+    models:
+      - "llama3.2:3b"
+      - "gemma2:2b"
+      - "qwen2.5:3b"
+      - "phi3:3.8b"
+
+    # Just condition A (threat + goal-conflict), the paper's headline condition,
+    # across all 3 scenarios -- enough to confirm each model works.
+    variables:
+      scenarios: ["blackmail", "leaking", "murder"]
+      goal_types: ["explicit"]
+      goal_values: ["america"]
+      urgency_types: ["replacement"]
+
+classification:
+  enabled: false
+  classifier_model: "claude-sonnet-4-6"
+  concurrency: 10
+  models:
+    murder: "murder_classifier"
+    blackmail: "blackmail_classifier"
+    leaking: "leak_classifier"
+
+execution:
+  resume_interrupted: true
+  timeout_seconds: 1800
+  retries: 2
+  checkpoint_frequency: 5
